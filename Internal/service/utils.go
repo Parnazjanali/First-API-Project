@@ -1,15 +1,12 @@
 package service
 
-import (
-	"math/rand"
-	"strings"
-	"time"
-)
-
-func GenerateRandomID() int {
-	return rand.Intn(200)
-}
-func GenerateRandomName(length int) string {
+/*
+	func GenerateRandomID() uint {
+		rand.Seed(time.Now().UnixNano())
+		return uint(rand.Intn(1000000))
+	}
+*/
+/*func GenerateRandomName(length int) string {
 	randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -20,4 +17,4 @@ func GenerateRandomName(length int) string {
 	}
 
 	return sb.String()
-}
+}*/

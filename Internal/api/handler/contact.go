@@ -3,102 +3,81 @@ package handler
 import (
 	"fmt"
 	"simple-api/Internal/models"
-	"simple-api/Internal/repository/contactInfo"
 	"simple-api/Internal/service"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func GetContactsList(c *fiber.Ctx) error {
 
-	if len(contactInfo.ContactList) == 0 {
-		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{
-			"error": "No contacts available",
+	contacts, err := service.GetAllContacts()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(map[string]string{
+			"error": err.Error(),
 		})
 	}
-	return c.JSON(contactInfo.ContactList)
+	return c.Status(fiber.StatusOK).JSON(contacts)
 }
 
-func GetContactByName(c *fiber.Ctx) error {
-	name := c.Params("name")
-	name = strings.ReplaceAll(name, "%20", " ")
-
-	_, founded := contactInfo.ContactListMap[name]
-	if !founded {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+func GetContactById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	contact, err := service.GetContactByID(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Contact not found",
 		})
 	}
-
-	return c.JSON(contactInfo.ContactListMap[name])
+	return c.Status(fiber.StatusOK).JSON(contact)
 }
 
-func AddNewContact(c *fiber.Ctx) error {
+func AddNewContactById(c *fiber.Ctx) error {
+	var newContact models.Contact
+	if err := c.BodyParser(&newContact); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Contact has already exist",
+		})
+	}
 
-	newContact := models.Contact{}
-	c.BodyParser(&newContact)
-
-	newContactID, err := service.AddNewContact(newContact)
+	newContactID, err := service.AddNewContact(newContact.Name, newContact.Phone, newContact.EmailAddress)
 	if err != nil {
-		return c.Status(fiber.ErrInternalServerError.Code).JSON(map[string]string{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(201).JSON(map[string]string{
-		"message": fmt.Sprintf("contact successfully created, ID: %d", newContactID),
-	})
-
-}
-
-func DeleteContactByName(c *fiber.Ctx) error {
-	name := c.Params("name")
-	name = strings.ReplaceAll(name, "%20", " ")
-
-	/*err:=service.DeleteContactByName(name)
-	if err!=nil{
-		return c.Status(fiber.statusNotFound).JSON(fiber.Map{
-			"error":err.Error(),
-		})
-	}
-	return c.Status(200).JSON(fiber.Map{
-		"message":fmt.Sprintf("Contact %s successfully deleted",name),
-	})*/
-	_, founded := contactInfo.ContactListMap[name]
-	if !founded {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Contact not found",
-		})
-	}
-	delete(contactInfo.ContactListMap, name)
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": fmt.Sprintf("Contact %s successfully deleted", name),
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": fmt.Sprintf("Contact successfully created, ID: %d", newContactID),
 	})
 }
-func UpdateContactByName(c *fiber.Ctx) error {
-	name := c.Params("name")
-	name = strings.ReplaceAll(name, "%20", "")
-	_, found := contactInfo.ContactListMap[name]
-	if !found {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Contact not found",
-		})
-	}
-	var updates models.Contact
-	if err := c.BodyParser(&updates); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid input data",
-		})
-	}
-	updatedContact, err := service.UpdateContact(name, updates)
+
+func DeleteContactById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := service.DeleteContactByID(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": err.Error(),
+		return c.Status(fiber.StatusNotFound).JSON(map[string]string{
+			"error": "Contact not found",
 		})
 	}
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": fmt.Sprintf("Contact %s successfully updated", updatedContact.Name),
+	return c.Status(fiber.StatusCreated).JSON(map[string]string{
+		"message": "Contact successfully deleted",
+	})
+}
+
+func UpdateContactById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	updatedContact := new(models.Contact)
+	if err := c.BodyParser(updatedContact); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]string{
+			"error": "Invalid input",
+		})
+	}
+	err := service.UpdateContact(id, updatedContact)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(map[string]string{
+			"error": "Contact not found",
+		})
+	}
+	return c.Status(fiber.StatusOK).JSON(map[string]string{
+		"message": "Contact successfully updated",
 	})
 }

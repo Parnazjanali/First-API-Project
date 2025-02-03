@@ -1,0 +1,28 @@
+# مرحله ۱: انتخاب یک بیس ایمیج سبک از Go
+FROM golang:1.20-alpine AS builder
+
+# مرحله ۲: تنظیم دایرکتوری کاری داخل کانتینر
+WORKDIR /app
+
+# مرحله ۳: کپی کردن فایل‌های موردنیاز
+COPY go.mod go.sum ./
+RUN go mod tidy
+
+# مرحله ۴: کپی کردن کل پروژه
+COPY . .
+
+# مرحله ۵: کامپایل برنامه (فرض می‌کنیم `main.go` داخل `cmd/` است)
+RUN go build -o main ./cmd/
+
+# مرحله ۶: ساخت یک ایمیج نهایی برای اجرای برنامه
+FROM alpine:latest
+WORKDIR /root/
+
+# کپی فایل باینری از مرحله قبلی
+COPY --from=builder /app/main .
+
+# پورت مورد استفاده
+EXPOSE 8080
+
+# اجرای برنامه
+CMD ["./main"]

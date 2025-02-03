@@ -1,8 +1,8 @@
 package models
 
 type Contact struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Phone        string `json:"phone"`
-	EmailAddress string `json:"email_address"`
+	ID           uint   `json:"id" gorm:"primaryKey"`
+	Name         string `json:"name" gorm:"not null"`
+	Phone        string `json:"phone" gorm:"unique;not null"`
+	EmailAddress string `json:"email_address" gorm:"unique;not null"`
 }
